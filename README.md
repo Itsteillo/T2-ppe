@@ -88,5 +88,3 @@ Las variables `PUBLIC_*` se inyectan en build time, así que deben estar definid
 2. Build command: `npm run build`. Deploy command: `npx wrangler deploy`.
 3. En Settings → Build → Variables and secrets, agrega `PUBLIC_SUPABASE_URL` y `PUBLIC_SUPABASE_ANON_KEY` (variables de **build**, no solo de runtime).
 4. En Supabase → Authentication → URL Configuration, agrega la URL `*.workers.dev` del Worker.
-
-No uses la `service_role` key en este proyecto: la seguridad de escritura depende de RLS con la anon key.
