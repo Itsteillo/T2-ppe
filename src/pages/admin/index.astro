@@ -1,0 +1,283 @@
+---
+// SSG: HTML estático. La sesión se verifica en el navegador y la seguridad real
+// de escritura la imponen las políticas RLS de Supabase.
+export const prerender = true;
+
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout title="Administrar estratagemas" description="Crea, edita y elimina tus estratagemas.">
+  <p id="admin-loading" class="notice" role="status">Verificando sesión…</p>
+
+  <div id="admin-root" hidden>
+    <div class="admin-head">
+      <div>
+        <h1>Mis estratagemas</h1>
+        <p class="lead" id="admin-user"></p>
+      </div>
+      <button type="button" class="btn btn--ghost" id="logout">Cerrar sesión</button>
+    </div>
+
+    <p id="admin-msg" class="notice" role="status" hidden></p>
+
+    <section aria-labelledby="form-title" class="panel">
+      <h2 id="form-title">Agregar estratagema</h2>
+      <form id="strat-form" class="form form--grid">
+        <input type="hidden" name="id" />
+
+        <div class="field">
+          <label for="nombre">Nombre</label>
+          <input id="nombre" name="nombre" type="text" minlength="2" maxlength="120" required />
+        </div>
+        <div class="field">
+          <label for="categoria">Categoría</label>
+          <select id="categoria" name="categoria" required>
+            <option value="ofensivo">Ofensivo</option>
+            <option value="suministro">Suministro</option>
+            <option value="defensivo">Defensivo</option>
+            <option value="mision">Misión</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="codigo">Código de entrada</label>
+          <input
+            id="codigo"
+            name="codigo"
+            type="text"
+            inputmode="text"
+            autocapitalize="characters"
+            autocomplete="off"
+            minlength="2"
+            maxlength="10"
+            pattern="[WASDwasd]{2,10}"
+            placeholder="WDSSS"
+            required
+          />
+          <p class="hint">Teclas W (arriba), A (izquierda), S (abajo) y D (derecha).</p>
+        </div>
+        <div class="field">
+          <label for="enfriamiento_seg">Enfriamiento (segundos)</label>
+          <input id="enfriamiento_seg" name="enfriamiento_seg" type="number" min="0" step="1" required />
+        </div>
+        <div class="field">
+          <label for="nivel_requerido">Nivel requerido</label>
+          <input id="nivel_requerido" name="nivel_requerido" type="number" min="1" step="1" value="1" required />
+        </div>
+        <div class="field">
+          <label for="costo_requisiciones">Costo en requisiciones</label>
+          <input id="costo_requisiciones" name="costo_requisiciones" type="number" min="0" step="1" value="0" required />
+        </div>
+        <div class="field field--wide">
+          <label for="descripcion">Descripción</label>
+          <textarea id="descripcion" name="descripcion" rows="3"></textarea>
+        </div>
+
+        <div class="actions field--wide">
+          <button type="submit" class="btn" id="guardar">Guardar estratagema</button>
+          <button type="button" class="btn btn--ghost" id="cancelar" hidden>Cancelar edición</button>
+        </div>
+      </form>
+    </section>
+
+    <section aria-labelledby="lista-title">
+      <h2 id="lista-title">Tus estratagemas registradas</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Nombre</th>
+              <th scope="col">Categoría</th>
+              <th scope="col">Código</th>
+              <th scope="col">Nivel</th>
+              <th scope="col"><span class="sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody id="strat-body"></tbody>
+        </table>
+      </div>
+      <p id="lista-vacia" class="empty" hidden>Todavía no has agregado estratagemas. Usa el formulario de arriba.</p>
+    </section>
+  </div>
+</Layout>
+
+<script>
+  import { navigate } from "astro:transitions/client";
+  import { supabase } from "../../lib/supabase";
+  import { CATEGORIAS, teclas } from "../../lib/estratagema-utils";
+  import type { Categoria, Estratagema, EstratagemaInput } from "../../lib/types";
+
+  let userId = "";
+  let escuchandoSesion = false;
+
+  const texto = (v: FormDataEntryValue | null) => {
+    const s = String(v ?? "").trim();
+    return s === "" ? null : s;
+  };
+
+  async function init() {
+    const root = document.querySelector<HTMLElement>("#admin-root");
+    if (!root || root.dataset.ready) return;
+    root.dataset.ready = "true";
+
+    // Sin sesión activa: directo al login.
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) {
+      navigate("/login");
+      return;
+    }
+    userId = data.session.user.id;
+
+    if (!escuchandoSesion) {
+      escuchandoSesion = true;
+      supabase.auth.onAuthStateChange((evento) => {
+        if (evento === "SIGNED_OUT") navigate("/login");
+      });
+    }
+
+    const $ = <T extends HTMLElement>(sel: string) => root.querySelector<T>(sel)!;
+    const form = $<HTMLFormElement>("#strat-form");
+    const cuerpo = $<HTMLTableSectionElement>("#strat-body");
+    const vacia = $<HTMLElement>("#lista-vacia");
+    const msg = $<HTMLElement>("#admin-msg");
+    const titulo = $<HTMLElement>("#form-title");
+    const guardar = $<HTMLButtonElement>("#guardar");
+    const cancelar = $<HTMLButtonElement>("#cancelar");
+
+    $("#admin-user").textContent = data.session.user.email ?? "";
+    document.querySelector("#admin-loading")?.setAttribute("hidden", "");
+    root.hidden = false;
+
+    function aviso(t: string, esError = false) {
+      msg.hidden = false;
+      msg.textContent = t;
+      msg.classList.toggle("notice--error", esError);
+    }
+
+    function modoCrear() {
+      form.reset();
+      (form.elements.namedItem("id") as HTMLInputElement).value = "";
+      titulo.textContent = "Agregar estratagema";
+      guardar.textContent = "Guardar estratagema";
+      cancelar.hidden = true;
+    }
+
+    function modoEditar(e: Estratagema) {
+      for (const campo of [
+        "nombre",
+        "categoria",
+        "codigo",
+        "enfriamiento_seg",
+        "nivel_requerido",
+        "costo_requisiciones",
+        "descripcion",
+      ] as const) {
+        (form.elements.namedItem(campo) as HTMLInputElement).value = String(e[campo] ?? "");
+      }
+      (form.elements.namedItem("id") as HTMLInputElement).value = e.id;
+      titulo.textContent = `Editar «${e.nombre}»`;
+      guardar.textContent = "Guardar cambios";
+      cancelar.hidden = false;
+      form.scrollIntoView({ block: "start" });
+    }
+
+    function boton(etiqueta: string, clase: string, onClick: () => void) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = `btn btn--small ${clase}`;
+      b.textContent = etiqueta;
+      b.addEventListener("click", onClick);
+      return b;
+    }
+
+    async function cargar() {
+      const { data: filas, error } = await supabase
+        .from("estratagemas")
+        .select("*")
+        .eq("created_by", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        aviso(`No se pudieron cargar tus estratagemas: ${error.message}`, true);
+        return;
+      }
+
+      const lista = (filas ?? []) as Estratagema[];
+      cuerpo.replaceChildren();
+      vacia.hidden = lista.length > 0;
+
+      for (const e of lista) {
+        const tr = document.createElement("tr");
+        const celdas = [
+          e.nombre,
+          CATEGORIAS[e.categoria],
+          teclas(e.codigo).map((t) => t.flecha).join(" "),
+          String(e.nivel_requerido),
+        ];
+        for (const valor of celdas) {
+          const td = document.createElement("td");
+          td.textContent = valor;
+          tr.append(td);
+        }
+        const acciones = document.createElement("td");
+        acciones.className = "row-actions";
+        acciones.append(
+          boton("Editar", "btn--ghost", () => modoEditar(e)),
+          boton("Eliminar", "btn--danger", () => eliminar(e)),
+        );
+        tr.append(acciones);
+        cuerpo.append(tr);
+      }
+    }
+
+    async function eliminar(e: Estratagema) {
+      if (!confirm(`¿Eliminar «${e.nombre}»? Esta acción no se puede deshacer.`)) return;
+      const { error } = await supabase.from("estratagemas").delete().eq("id", e.id);
+      if (error) {
+        aviso(`No se pudo eliminar: ${error.message}`, true);
+        return;
+      }
+      aviso("Estratagema eliminada.");
+      await cargar();
+    }
+
+    form.addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const fd = new FormData(form);
+      const id = String(fd.get("id") ?? "");
+      const payload: EstratagemaInput = {
+        nombre: String(fd.get("nombre") ?? "").trim(),
+        categoria: String(fd.get("categoria")) as Categoria,
+        codigo: String(fd.get("codigo") ?? "").trim().toUpperCase(),
+        enfriamiento_seg: Number(fd.get("enfriamiento_seg")),
+        nivel_requerido: Number(fd.get("nivel_requerido")),
+        costo_requisiciones: Number(fd.get("costo_requisiciones")),
+        descripcion: texto(fd.get("descripcion")),
+      };
+
+      guardar.disabled = true;
+      const { error } = id
+        ? await supabase.from("estratagemas").update(payload).eq("id", id)
+        : await supabase.from("estratagemas").insert(payload);
+      guardar.disabled = false;
+
+      if (error) {
+        aviso(`No se pudo guardar: ${error.message}`, true);
+        return;
+      }
+      aviso(id ? "Cambios guardados." : "Estratagema guardada.");
+      modoCrear();
+      await cargar();
+    });
+
+    cancelar.addEventListener("click", modoCrear);
+
+    $<HTMLButtonElement>("#logout").addEventListener("click", async () => {
+      await supabase.auth.signOut();
+      navigate("/login");
+    });
+
+    await cargar();
+  }
+
+  document.addEventListener("astro:page-load", init);
+</script>

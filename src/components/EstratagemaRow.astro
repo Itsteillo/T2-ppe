@@ -1,0 +1,44 @@
+---
+import type { Estratagema } from "../lib/types";
+import {
+  CATEGORIAS,
+  describirCodigo,
+  formatoCosto,
+  formatoSegundos,
+  teclas,
+} from "../lib/estratagema-utils";
+
+interface Props {
+  estratagema: Estratagema;
+}
+const { estratagema: e } = Astro.props;
+---
+
+<li class="strat" data-categoria={e.categoria}>
+  <div class="strat__main">
+    <h2>{e.nombre}</h2>
+    <p class="strat__cat">{CATEGORIAS[e.categoria]}</p>
+    {e.descripcion && <p class="strat__desc">{e.descripcion}</p>}
+  </div>
+
+  <div class="strat__code">
+    <ol class="code" aria-label={`Código: ${describirCodigo(e.codigo)}`}>
+      {teclas(e.codigo).map((t) => <li aria-hidden="true">{t.flecha}</li>)}
+    </ol>
+  </div>
+
+  <dl class="strat__meta">
+    <div>
+      <dt>Enfriamiento</dt>
+      <dd>{formatoSegundos(e.enfriamiento_seg)}</dd>
+    </div>
+    <div>
+      <dt>Nivel</dt>
+      <dd>{e.nivel_requerido}</dd>
+    </div>
+    <div>
+      <dt>Costo</dt>
+      <dd>{formatoCosto(e.costo_requisiciones)}</dd>
+    </div>
+  </dl>
+</li>

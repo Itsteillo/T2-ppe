@@ -1,0 +1,70 @@
+---
+// SSG: se genera una sola vez en el build.
+export const prerender = true;
+
+import Layout from "../layouts/Layout.astro";
+
+const rutas = [
+  { ruta: "/", modo: "SSR", nota: "Consulta Supabase en el servidor en cada request; búsqueda y paginación por query params." },
+  { ruta: "/acerca", modo: "SSG", nota: "Contenido fijo, pre-renderizado en el build." },
+  { ruta: "/login y /registro", modo: "SSG", nota: "Formularios estáticos; la autenticación ocurre en el navegador." },
+  { ruta: "/admin", modo: "SSG", nota: "CRUD desde el cliente; RLS en Supabase decide qué se puede escribir." },
+];
+---
+
+<Layout title="Acerca de" description="De qué trata este catálogo de estratagemas de Helldivers 2 y cómo está construido.">
+  <article class="prose">
+    <h1>Acerca de este catálogo</h1>
+    <p>
+      En Helldivers 2 las estratagemas son las herramientas con las que un escuadrón pide bombardeos,
+      armas de apoyo, torretas y vehículos a su destructor. Cada una se activa con una combinación de
+      direcciones (W, A, S, D) y luego se lanza la baliza al objetivo.
+    </p>
+    <p>
+      Este catálogo reúne para cada estratagema su categoría (ofensiva, de suministro, defensiva o de
+      misión), el código de entrada, el tiempo de enfriamiento, el nivel necesario para desbloquearla y
+      su costo en requisiciones.
+    </p>
+    <p>
+      Cualquier persona puede consultarlo. Quien tenga una cuenta puede registrar estratagemas,
+      corregirlas y eliminarlas desde la sección de administración.
+    </p>
+
+    <h2>Cómo se renderiza cada página</h2>
+    <p>
+      Es un único proyecto de Astro desplegado en un Cloudflare Worker que mezcla páginas dinámicas
+      y estáticas.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th scope="col">Ruta</th><th scope="col">Modo</th><th scope="col">Detalle</th></tr>
+        </thead>
+        <tbody>
+          {
+            rutas.map((r) => (
+              <tr>
+                <th scope="row">{r.ruta}</th>
+                <td>{r.modo}</td>
+                <td>{r.nota}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Datos y seguridad</h2>
+    <p>
+      Los datos viven en Supabase. La lectura es pública y la escritura exige una sesión activa: las
+      políticas de seguridad a nivel de fila (RLS) solo permiten modificar las estratagemas que creó
+      cada usuario.
+    </p>
+
+    <h2>Aviso</h2>
+    <p>
+      Proyecto académico, sin fines comerciales y sin relación con los desarrolladores ni con el
+      editor del juego. Los valores pueden cambiar con los parches del juego.
+    </p>
+  </article>
+</Layout>

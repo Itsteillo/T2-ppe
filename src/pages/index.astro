@@ -1,0 +1,77 @@
+---
+// SSR: se ejecuta en el Worker en cada request y consulta Supabase desde el servidor.
+export const prerender = false;
+
+import Layout from "../layouts/Layout.astro";
+import EstratagemaRow from "../components/EstratagemaRow.astro";
+import Pagination from "../components/Pagination.astro";
+import { listarEstratagemas } from "../lib/estratagemas";
+
+const q = (Astro.url.searchParams.get("q") ?? "").trim().slice(0, 80);
+const pageParam = parseInt(Astro.url.searchParams.get("page") ?? "1", 10);
+const page = Math.min(Math.max(1, Number.isNaN(pageParam) ? 1 : pageParam), 10000);
+
+const { estratagemas, total, totalPages, error, fueraDeRango } = await listarEstratagemas(q, page);
+
+// ?page=99 en una búsqueda con pocas filas: volvemos a la primera página.
+if (fueraDeRango) {
+  return Astro.redirect(q ? `/?q=${encodeURIComponent(q)}` : "/");
+}
+
+const resumen = q
+  ? `${total} ${total === 1 ? "resultado" : "resultados"} para «${q}»`
+  : `${total} ${total === 1 ? "estratagema" : "estratagemas"} en el catálogo`;
+---
+
+<Layout
+  title={q ? `Búsqueda: ${q}` : "Catálogo"}
+  description="Consulta las estratagemas de Helldivers 2: código de entrada, enfriamiento, nivel y costo."
+>
+  <section class="hero">
+    <h1>Estratagemas de Helldivers 2</h1>
+    <p class="lead">
+      Busca por nombre y consulta el código de entrada, el enfriamiento y el nivel necesario.
+    </p>
+    <form class="search" method="get" action="/" role="search">
+      <label for="q">Nombre de la estratagema</label>
+      <div class="search__row">
+        <input id="q" type="search" name="q" value={q} maxlength="80" placeholder="Ej: Railcannon" />
+        <button type="submit" class="btn">Buscar</button>
+      </div>
+    </form>
+  </section>
+
+  <section aria-labelledby="resultados-titulo">
+    <h2 id="resultados-titulo" class="results-title">{resumen}</h2>
+
+    {error && <p class="notice notice--error" role="alert">No se pudo cargar el catálogo: {error}</p>}
+
+    {
+      !error && estratagemas.length === 0 && (
+        <div class="empty">
+          {q ? (
+            <>
+              <p>Ninguna estratagema coincide con «{q}».</p>
+              <a href="/">Ver todo el catálogo</a>
+            </>
+          ) : (
+            <>
+              <p>Aún no hay estratagemas registradas.</p>
+              <a href="/admin">Inicia sesión para agregar la primera</a>
+            </>
+          )}
+        </div>
+      )
+    }
+
+    {
+      estratagemas.length > 0 && (
+        <ul class="strat-list">
+          {estratagemas.map((e) => <EstratagemaRow estratagema={e} />)}
+        </ul>
+      )
+    }
+
+    <Pagination page={page} totalPages={totalPages} q={q} />
+  </section>
+</Layout>

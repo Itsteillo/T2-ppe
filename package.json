@@ -1,0 +1,27 @@
+{
+  "name": "helldivers-estratagemas",
+  "version": "1.0.0",
+  "description": "Catálogo de estratagemas de Helldivers 2: Astro híbrido (SSR + SSG) en Cloudflare Workers con Supabase",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "deploy": "astro build && wrangler deploy"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@astrojs/cloudflare": "^14.3.3",
+    "@supabase/supabase-js": "^2.117.2",
+    "astro": "^7.3.5"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.145.0"
+  },
+  "private": true,
+  "type": "module"
+}

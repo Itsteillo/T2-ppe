@@ -1,0 +1,25 @@
+---
+const path = Astro.url.pathname;
+const links = [
+  { href: "/", label: "Catálogo" },
+  { href: "/acerca", label: "Acerca de" },
+  { href: "/admin", label: "Administrar" },
+];
+const activo = (href: string) =>
+  href === "/" ? path === "/" : path === href || path.startsWith(href + "/");
+---
+
+<header class="site-header">
+  <div class="container site-header__inner">
+    <a class="brand" href="/">Estratagemas HD2</a>
+    <nav aria-label="Principal">
+      {
+        links.map((l) => (
+          <a href={l.href} aria-current={activo(l.href) ? "page" : undefined}>
+            {l.label}
+          </a>
+        ))
+      }
+    </nav>
+  </div>
+</header>
