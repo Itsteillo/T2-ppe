@@ -21,9 +21,8 @@ const rutas = [
       direcciones (W, A, S, D) y luego se lanza la baliza al objetivo.
     </p>
     <p>
-      Este catálogo reúne para cada estratagema su categoría (ofensiva, de suministro, defensiva o de
-      misión), el código de entrada, el tiempo de enfriamiento, el nivel necesario para desbloquearla y
-      su costo en requisiciones.
+      Este catálogo reúne para cada estratagema su imagen, nombre, categoría (ofensiva, de suministro,
+      defensiva o de misión) y código de entrada.
     </p>
     <p>
       Cualquier persona puede consultarlo. Quien tenga una cuenta puede registrar estratagemas,
@@ -59,12 +58,6 @@ const rutas = [
       Los datos viven en Supabase. La lectura es pública y la escritura exige una sesión activa: las
       políticas de seguridad a nivel de fila (RLS) solo permiten modificar las estratagemas que creó
       cada usuario.
-    </p>
-
-    <h2>Aviso</h2>
-    <p>
-      Proyecto académico, sin fines comerciales y sin relación con los desarrolladores ni con el
-      editor del juego. Los valores pueden cambiar con los parches del juego.
     </p>
   </article>
 </Layout>

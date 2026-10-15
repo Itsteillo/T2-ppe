@@ -1,7 +1,7 @@
 # Estratagemas de Helldivers 2
 
-Catálogo de estratagemas del videojuego Helldivers 2 (código de entrada, categoría,
-enfriamiento, nivel y costo). Proyecto Astro en arquitectura híbrida sobre Cloudflare Workers,
+Catálogo de estratagemas del videojuego Helldivers 2 (imagen, nombre, categoría y código de entrada).
+Proyecto Astro en arquitectura híbrida sobre Cloudflare Workers,
 con Supabase como base de datos y autenticación.
 
 Proyecto académico y no oficial, sin relación con los creadores del juego.
@@ -11,13 +11,10 @@ Proyecto académico y no oficial, sin relación con los creadores del juego.
 | Campo | Tipo | Nota |
 |---|---|---|
 | `id` | uuid | PK |
+| `imagen` | text | URL de la imagen |
 | `nombre` | text | Campo de búsqueda |
 | `categoria` | text | `ofensivo`, `suministro`, `defensivo` o `mision` |
 | `codigo` | text | Teclas `W A S D` (arriba, izquierda, abajo, derecha). Ej: `WDSSS` |
-| `enfriamiento_seg` | integer | Segundos |
-| `nivel_requerido` | integer | Mínimo 1 |
-| `costo_requisiciones` | integer | 0 = gratis |
-| `descripcion` | text | Opcional |
 | `created_by` | uuid | FK a `auth.users`, por defecto `auth.uid()` |
 | `created_at` | timestamptz | |
 

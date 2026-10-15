@@ -2,14 +2,11 @@ export type Categoria = "ofensivo" | "suministro" | "defensivo" | "mision";
 
 export interface Estratagema {
   id: string;
+  imagen: string;
   nombre: string;
   categoria: Categoria;
   /** Teclas W, A, S, D (arriba, izquierda, abajo, derecha). Ej: "WDSSS". */
   codigo: string;
-  enfriamiento_seg: number;
-  nivel_requerido: number;
-  costo_requisiciones: number;
-  descripcion: string | null;
   created_by: string;
   created_at: string;
 }

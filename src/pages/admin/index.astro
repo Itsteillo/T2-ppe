@@ -26,6 +26,10 @@ import Layout from "../../layouts/Layout.astro";
         <input type="hidden" name="id" />
 
         <div class="field">
+          <label for="imagen">Imagen</label>
+          <input id="imagen" name="imagen" type="url" placeholder="https://..." required />
+        </div>
+        <div class="field">
           <label for="nombre">Nombre</label>
           <input id="nombre" name="nombre" type="text" minlength="2" maxlength="120" required />
         </div>
@@ -55,23 +59,6 @@ import Layout from "../../layouts/Layout.astro";
           />
           <p class="hint">Teclas W (arriba), A (izquierda), S (abajo) y D (derecha).</p>
         </div>
-        <div class="field">
-          <label for="enfriamiento_seg">Enfriamiento (segundos)</label>
-          <input id="enfriamiento_seg" name="enfriamiento_seg" type="number" min="0" step="1" required />
-        </div>
-        <div class="field">
-          <label for="nivel_requerido">Nivel requerido</label>
-          <input id="nivel_requerido" name="nivel_requerido" type="number" min="1" step="1" value="1" required />
-        </div>
-        <div class="field">
-          <label for="costo_requisiciones">Costo en requisiciones</label>
-          <input id="costo_requisiciones" name="costo_requisiciones" type="number" min="0" step="1" value="0" required />
-        </div>
-        <div class="field field--wide">
-          <label for="descripcion">Descripción</label>
-          <textarea id="descripcion" name="descripcion" rows="3"></textarea>
-        </div>
-
         <div class="actions field--wide">
           <button type="submit" class="btn" id="guardar">Guardar estratagema</button>
           <button type="button" class="btn btn--ghost" id="cancelar" hidden>Cancelar edición</button>
@@ -86,6 +73,7 @@ import Layout from "../../layouts/Layout.astro";
           <thead>
             <tr>
               <th scope="col">Nombre</th>
+              <th scope="col">Imagen</th>
               <th scope="col">Categoría</th>
               <th scope="col">Código</th>
               <th scope="col">Nivel</th>
@@ -108,11 +96,6 @@ import Layout from "../../layouts/Layout.astro";
 
   let userId = "";
   let escuchandoSesion = false;
-
-  const texto = (v: FormDataEntryValue | null) => {
-    const s = String(v ?? "").trim();
-    return s === "" ? null : s;
-  };
 
   async function init() {
     const root = document.querySelector<HTMLElement>("#admin-root");
@@ -163,13 +146,10 @@ import Layout from "../../layouts/Layout.astro";
 
     function modoEditar(e: Estratagema) {
       for (const campo of [
+        "imagen",
         "nombre",
         "categoria",
         "codigo",
-        "enfriamiento_seg",
-        "nivel_requerido",
-        "costo_requisiciones",
-        "descripcion",
       ] as const) {
         (form.elements.namedItem(campo) as HTMLInputElement).value = String(e[campo] ?? "");
       }
@@ -209,13 +189,21 @@ import Layout from "../../layouts/Layout.astro";
         const tr = document.createElement("tr");
         const celdas = [
           e.nombre,
+          e.imagen,
           CATEGORIAS[e.categoria],
           teclas(e.codigo).map((t) => t.flecha).join(" "),
-          String(e.nivel_requerido),
         ];
-        for (const valor of celdas) {
+        for (const [indice, valor] of celdas.entries()) {
           const td = document.createElement("td");
-          td.textContent = valor;
+          if (indice === 1) {
+            const imagen = document.createElement("img");
+            imagen.src = valor;
+            imagen.alt = e.nombre;
+            imagen.className = "admin-image";
+            td.append(imagen);
+          } else {
+            td.textContent = valor;
+          }
           tr.append(td);
         }
         const acciones = document.createElement("td");
@@ -245,13 +233,10 @@ import Layout from "../../layouts/Layout.astro";
       const fd = new FormData(form);
       const id = String(fd.get("id") ?? "");
       const payload: EstratagemaInput = {
+        imagen: String(fd.get("imagen") ?? "").trim(),
         nombre: String(fd.get("nombre") ?? "").trim(),
         categoria: String(fd.get("categoria")) as Categoria,
         codigo: String(fd.get("codigo") ?? "").trim().toUpperCase(),
-        enfriamiento_seg: Number(fd.get("enfriamiento_seg")),
-        nivel_requerido: Number(fd.get("nivel_requerido")),
-        costo_requisiciones: Number(fd.get("costo_requisiciones")),
-        descripcion: texto(fd.get("descripcion")),
       };
 
       guardar.disabled = true;

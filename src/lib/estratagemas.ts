@@ -26,7 +26,6 @@ export async function listarEstratagemas(q: string, page: number): Promise<Lista
   let query = supabase
     .from("estratagemas")
     .select("*", { count: "exact" })
-    .order("nivel_requerido", { ascending: true })
     .order("nombre", { ascending: true })
     .range(from, to);
 
